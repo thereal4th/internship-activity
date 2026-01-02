@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react';
 import Link from 'next/link'; 
 import { Calendar, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '../components/Button';
