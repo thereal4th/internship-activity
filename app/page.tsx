@@ -15,14 +15,20 @@ export default function LandingPage() {
             Booking made <span className="text-primary-600">effortless</span>.
           </h1>
           <p className="max-w-2xl mx-auto text-xl text-gray-500">
-            Schedule your appointments in seconds with our intuitive booking system. 
-            No phone calls, no hassle. Just click, confirm, and you&apos;re set.
+            Schedule your appointments in seconds with our intuitive booking system.
           </p>
           <div className="mt-8 flex justify-center gap-4">
             
             <Link href="/Booking"> 
               <Button size="lg" className="group bg-black">
                 Book Appointment
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+
+            <Link href="/MyBookings"> 
+              <Button size="lg" className="group bg-black">
+                Manage Bookings
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
