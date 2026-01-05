@@ -41,7 +41,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
             <div className="h-12 w-12 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-              <Calendar className="h-6 w-6 text-primary-600" />
+              <Calendar className="h-6 w-6 text-black" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Real-time Availability</h3>
             <p className="text-gray-500">View live slots and pick the date that works best for your schedule.</p>
@@ -49,7 +49,7 @@ export default function LandingPage() {
           
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
             <div className="h-12 w-12 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-              <Clock className="h-6 w-6 text-primary-600" />
+              <Clock className="h-6 w-6 text-black" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Instant Confirmation</h3>
             <p className="text-gray-500">Receive immediate confirmation of your booking without the wait.</p>
@@ -57,7 +57,7 @@ export default function LandingPage() {
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
             <div className="h-12 w-12 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-primary-600" />
+              <CheckCircle className="h-6 w-6 text-black" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Easy Management</h3>
             <p className="text-gray-500">Track all your appointments in one place and cancel anytime if needed.</p>
