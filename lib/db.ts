@@ -1,0 +1,31 @@
+// lib/db.ts
+import { MongoClient } from 'mongodb';
+
+if (!process.env.MONGODB_CONNECTION_STRING) {
+  throw new Error('Please add your Mongo URI to .env.local');
+}
+
+const uri = process.env.MONGODB_CONNECTION_STRING;
+const options = {};
+
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === 'development') {
+  // Use a global variable so the connection is preserved during hot reloads
+  const globalWithMongo = global as typeof globalThis & {
+    _mongoClientPromise?: Promise<MongoClient>;
+  };
+
+  if (!globalWithMongo._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    globalWithMongo._mongoClientPromise = client.connect();
+  }
+  clientPromise = globalWithMongo._mongoClientPromise;
+} else {
+  // In production, it's better to not use a global variable
+  client = new MongoClient(uri, options);
+  clientPromise = client.connect();
+}
+
+export default clientPromise;

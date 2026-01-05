@@ -1,60 +1,65 @@
-import React from 'react';
-import { CalendarCheck } from 'lucide-react';
-import { PageView } from '../types';
+'use client';
+
+import Link from 'next/link';
+import { CalendarCheck, LogOut } from 'lucide-react';
+import { User } from '@/types';
 
 interface HeaderProps {
-  currentView: PageView;
-  onChangeView: (view: PageView) => void;
+  currentUser: User | null;
+  onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView }) => {
-  const navItems = [
-    { label: 'Home', view: PageView.LANDING },
-    { label: 'Book Now', view: PageView.BOOKING },
-    { label: 'My Bookings', view: PageView.MY_BOOKINGS },
-  ];
-
+export const Header = ({ currentUser, onLogout }: HeaderProps) => {
   return (
-    <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-gray-100">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div 
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
-            onClick={() => onChangeView(PageView.LANDING)}
-          >
-            <div className="bg-primary-600 p-1.5 rounded-lg">
+          
+          {/* LEFT: Home / Logo */}
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="bg-black p-1.5 rounded-lg">
               <CalendarCheck className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-700 to-primary-500">
-              SlotSwift
+            <span className="text-xl font-bold text-black">
+              4th
             </span>
+          </Link>
+
+          {/* RIGHT: Auth Actions */}
+          <div className="flex items-center gap-6">
+            {currentUser ? (
+              // STATE: Logged In
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-600 hidden sm:block">
+                  Hello, {currentUser.name}
+                </span>
+                <button 
+                  onClick={onLogout}
+                  className="flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              // STATE: Logged Out
+              <>
+                <Link 
+                  href="/login" 
+                  className="text-sm font-medium text-gray-600 hover:text-black"
+                >
+                  Log In
+                </Link>
+                <Link 
+                  href="/signup" 
+                  className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.view}
-                onClick={() => onChangeView(item.view)}
-                className={`text-sm font-medium transition-colors duration-200 ${
-                  currentView === item.view
-                    ? 'text-primary-600'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="md:hidden flex items-center">
-             {/* Mobile simplified nav - could expand to hamburger menu but keeping simple for this iteration */}
-            <button 
-              onClick={() => onChangeView(PageView.MY_BOOKINGS)}
-              className="text-sm font-medium text-gray-500 hover:text-primary-600"
-            >
-              My Bookings
-            </button>
-          </div>
         </div>
       </div>
     </header>
