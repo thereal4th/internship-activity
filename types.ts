@@ -19,7 +19,7 @@ export interface Booking {
 }
 
 export enum PageView {
-    LANDING = 'Home',
+    LANDING = 'LANDING',
     BOOKING = 'BOOKING',
     MY_BOOKINGS = 'MY_BOOKINGS'
 }
