@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authenticate } from '@/app/actions/authactions';
@@ -8,7 +8,6 @@ import { Button } from '@/components/Button';
 import { CalendarCheck, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
-  // 1. Hook into our Server Action
   const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
   
   const searchParams = useSearchParams();
@@ -29,7 +28,7 @@ export default function LoginPage() {
 
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
           
-          {/* Success message from Signup redirect */}
+          {/* Success message */}
           {showSuccess && !errorMessage && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4" />
@@ -37,7 +36,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Auth Error Message */}
+          {/* Error Message */}
           {errorMessage && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
               <AlertCircle className="h-4 w-4" />
@@ -54,7 +53,8 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder="john@example.com"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
@@ -68,7 +68,8 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 

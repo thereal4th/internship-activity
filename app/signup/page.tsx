@@ -19,7 +19,6 @@ export default function SignupPage() {
     const result = await registerUserAction(formData);
 
     if (result.success) {
-      // Success! Redirect to login so they can sign in
       router.push('/login?registered=true');
     } else {
       setError(result.error || "An unexpected error occurred");
@@ -30,7 +29,6 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
       <div className="max-w-md w-full space-y-8">
-        {/* Logo/Brand */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center bg-black p-3 rounded-2xl mb-4">
             <CalendarCheck className="h-8 w-8 text-white" />
@@ -57,7 +55,8 @@ export default function SignupPage() {
                 type="text"
                 required
                 placeholder="John Doe"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
@@ -68,7 +67,8 @@ export default function SignupPage() {
                 type="email"
                 required
                 placeholder="john@example.com"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
@@ -79,7 +79,8 @@ export default function SignupPage() {
                 type="password"
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
