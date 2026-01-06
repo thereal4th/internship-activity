@@ -7,6 +7,14 @@ import { Booking, PopulatedRawBooking, User, RawUser } from '@/types'
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/app/auth';
 
+function getSlotString(slot: any): string {
+    if (!slot) return "";
+    if (typeof slot === 'string') return slot;
+    if (typeof slot === 'object' && slot.id) return slot.id;
+    return String(slot);
+    
+}
+
 function normalizeSlot(slot: any): string {
     try {
         if (!slot && slot !== '') return '';
@@ -39,36 +47,24 @@ function normalizeSlot(slot: any): string {
 export async function createBookingAction(data: { slot: string }) {
     try {
         const session = await auth();
-        if (!session || !session.user) {
-            return { success: false, error: "Please log in first." }
-        }
+        if (!session || !session.user) return { success: false, error: "Please log in first." };
 
         await connectDB();
         
-        // Parse incoming slot (assume it's local if it lacks timezone) and convert to canonical UTC ISO
-        const parsed = new Date(data.slot);
-        if (isNaN(parsed.getTime())) {
-            return { success: false, error: "Invalid slot format" };
-        }
-        const standardizedSlot = parsed.toISOString(); // canonical UTC ISO
+        // We look for the EXACT string sent by the client (e.g., "2026-01-17_12:00")
+        const isBooked = await BookingModel.findOne({ slot: data.slot });
+        if (isBooked) return { success: false, error: "Slot is already booked" };
 
-        const isBooked = await BookingModel.findOne({ slot: standardizedSlot });
-        if (isBooked) {
-            return { success: false, error: "Slot is already booked" }
-        }
-
-        const newBooking = await BookingModel.create({
+        await BookingModel.create({
             user: session.user.id,
-            slot: standardizedSlot
+            slot: data.slot // Save the raw string
         });
 
-        revalidatePath('/MyBookings'); 
         revalidatePath('/Booking');
-
-        return { success: true, id: newBooking._id.toString() };
+        revalidatePath('/MyBookings');
+        return { success: true };
     }
     catch (error) {
-        console.log("Booking could not be created: ", error);
         return { success: false, error: "Database save failed" };
     }
 }
@@ -107,9 +103,7 @@ export async function getBookingsAction() {
 export async function getAllBookingsAction() {
     try {
         await connectDB();
-
         const docs = await BookingModel.find({})
-            .sort({ createdAt: -1 })
             .populate('user') 
             .lean<PopulatedRawBooking[]>();
 
@@ -120,12 +114,10 @@ export async function getAllBookingsAction() {
                 name: doc.user.name,
                 email: doc.user.email
             },
-            slot: normalizeSlot((doc as any).slot),
+            slot: getSlotString((doc as any).slot),
             createdAt: doc.createdAt.getTime(),
         })) as Booking[];
-    }
-    catch (error) {
-        console.log("Fetch all failed:", error);
+    } catch (error) {
         return [];
     }
 }

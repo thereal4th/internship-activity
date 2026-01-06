@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, X, Clock, Calendar } from 'lucide-react';
+import { ChevronRight, X, Clock } from 'lucide-react';
 import { Button } from '@/components/Button'; 
 import { createBookingAction } from '@/app/actions';
 import { Booking } from '@/types';
@@ -14,79 +14,65 @@ interface Props {
 export default function BookingClient({ initialBookings }: Props) {
   const router = useRouter();
 
+  // CHANGE 1: Create local state initialized with props, but capable of updating
+  const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Use LOCAL date components to build YYYY-MM-DD (avoid UTC shift)
+  // Helper: Format date as YYYY-MM-DD (Local time, not UTC)
   const formatDateKey = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return date.toLocaleDateString('en-CA'); // 'en-CA' outputs YYYY-MM-DD
   };
 
   const currentDateKey = formatDateKey(selectedDate);
 
-  // Helper: convert local date+time to canonical UTC ISO string
-  const localDateTimeToUTC = (dateKey: string, time: string) => {
-    // construct local datetime and convert to UTC ISO
-    const local = new Date(`${dateKey}T${time}:00`);
-    return local.toISOString(); // "YYYY-MM-DDTHH:mm:ss.sssZ"
-  };
-
-  // Defensive: normalize initialBookings into canonical UTC ISO strings
-  const normalizedBookings = useMemo(() => {
-    return initialBookings.map(b => {
-      const slotRaw = (b as any).slot;
-      let normalized = '';
+  // CHANGE 2: Fetch bookings whenever the date changes
+  useEffect(() => {
+    async function fetchBookings() {
       try {
-        if (!slotRaw && slotRaw !== '') {
-          normalized = '';
-        } else if (typeof slotRaw === 'string') {
-          // "2026-01-05_09:00" => convert to local then toISOString
-          if (/^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}$/.test(slotRaw)) {
-            const parsedLocal = slotRaw.replace('_','T') + ':00';
-            normalized = new Date(parsedLocal).toISOString();
-          } else {
-            const d = new Date(slotRaw);
-            if (!isNaN(d.getTime())) normalized = d.toISOString();
-            else normalized = String(slotRaw);
-          }
-        } else if (typeof slotRaw === 'object' && slotRaw !== null) {
-          if (slotRaw.date && slotRaw.time) {
-            normalized = new Date(`${slotRaw.date}T${slotRaw.time}:00`).toISOString();
-          } else if (slotRaw.id && typeof slotRaw.id === 'string') {
-            const parsed = slotRaw.id.replace('_','T') + ':00';
-            normalized = new Date(parsed).toISOString();
-          } else {
-            normalized = String(slotRaw);
-          }
+        // This assumes you have an API route at /api/bookings
+        const res = await fetch(`/api/bookings?date=${currentDateKey}`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          setBookings(data);
+          // console.log("Updated bookings for", currentDateKey, data);
         } else {
-          normalized = String(slotRaw);
+          console.error("Failed to fetch slots");
         }
-      } catch (e) {
-        normalized = String(slotRaw);
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
       }
-      return { ...b, slot: normalized };
-    });
-  }, [initialBookings]);
-
-  // Compare up to seconds (ignore milliseconds)
-  const isoToKey = (iso: string) => (iso ? iso.substring(0,19) : iso);
-
-  const isSlotBooked = (dateKey: string, time: string) => {
-    try {
-      const target = localDateTimeToUTC(dateKey, time); // canonical UTC ISO
-      const targetKey = isoToKey(target);
-      return normalizedBookings.some(b => {
-        const s = (b.slot as string) || '';
-        return isoToKey(s) === targetKey;
-      });
-    } catch (e) {
-      return false;
     }
+
+    if (currentDateKey) {
+      fetchBookings();
+    }
+  }, [currentDateKey]);
+
+  /**
+   * CORE FIX: Matches exactly the string format saved in the DB.
+   * Format: "YYYY-MM-DD_HH:mm" (e.g., "2026-01-05_09:30")
+   */
+  const isSlotBooked = (dateKey: string, time: string) => {
+    const targetId = `${dateKey}_${time}`;
+    
+    // CHANGE 3: Use 'bookings' state instead of 'initialBookings' prop
+    return bookings.some(b => {
+        // 1. Check if slot is a simple string (Expected new format)
+        if (typeof b.slot === 'string') {
+            return b.slot === targetId;
+        }
+        // 2. Fallback: Check if slot is an object (Old data format)
+        if (typeof b.slot === 'object' && b.slot !== null) {
+            // @ts-ignore
+            return b.slot.id === targetId || b.slot === targetId;
+        }
+        return false;
+    });
   };
 
   const availableDates = useMemo(() => {
@@ -116,7 +102,7 @@ export default function BookingClient({ initialBookings }: Props) {
   const availableSlotsCount = useMemo(() => {
     const bookedCount = timeSlots.filter(time => isSlotBooked(currentDateKey, time)).length;
     return timeSlots.length - bookedCount;
-  }, [currentDateKey, timeSlots, normalizedBookings]);
+  }, [currentDateKey, bookings, timeSlots]); // Updated dependency to 'bookings'
 
   const handleSlotClick = (time: string) => {
     setSelectedSlot(time);
@@ -127,20 +113,34 @@ export default function BookingClient({ initialBookings }: Props) {
     e.preventDefault();
     if (!selectedSlot) return;
     setIsSubmitting(true);
-
-    // Convert the user's selected local datetime to canonical UTC ISO
-    const isoSlot = localDateTimeToUTC(currentDateKey, selectedSlot);
-
-    const result = await createBookingAction({ slot: isoSlot });
+    
+    // CORE FIX: Send the exact "Wall Clock" string. 
+    const slotId = `${currentDateKey}_${selectedSlot}`;
+    
+    const result = await createBookingAction({ slot: slotId });
 
     if (result.success) {
       setIsModalOpen(false);
-      window.location.href = '/MyBookings';
+      // Refresh the page data immediately so the slot turns gray
+      router.refresh(); 
+      // Manually update local state to reflect change instantly without waiting for refresh
+      // (Optional UX improvement)
+      router.push('/MyBookings');
     } else {
       alert(result.error || "Failed to save booking");
       setIsSubmitting(false);
     }
   };
+
+  // Helper for nice time display (e.g. "13:00" -> "1:00 PM")
+  const formatTimeDisplay = (time: string) => {
+      if (!time) return "";
+      const [h, m] = time.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${m} ${ampm}`;
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -208,16 +208,12 @@ export default function BookingClient({ initialBookings }: Props) {
                       className={`
                         py-2 px-3 rounded-lg text-sm font-medium border transition-all
                         ${booked
-                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
                           : 'bg-white text-blue-700 border-blue-200 hover:border-blue-500 hover:shadow-md active:scale-95'
                         }
                       `}
                     >
-                      {booked ? (
-                        <span className="line-through decoration-gray-400">{time}</span>
-                      ) : (
-                        time
-                      )}
+                        {time}
                     </button>
                   );
                 })}
@@ -244,7 +240,9 @@ export default function BookingClient({ initialBookings }: Props) {
                     <p className="text-sm font-medium text-blue-900">
                       {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-lg font-bold text-blue-700">{selectedSlot}</p>
+                    <p className="text-lg font-bold text-blue-700">
+                        {selectedSlot ? formatTimeDisplay(selectedSlot) : ''}
+                    </p>
                   </div>
                 </div>
 
