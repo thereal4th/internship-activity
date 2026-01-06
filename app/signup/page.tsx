@@ -86,7 +86,7 @@ export default function SignupPage() {
 
             <Button 
               type="submit" 
-              className="w-full py-6 text-lg group" 
+              className="w-full py-3 text-lg bg-black text-white" 
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating Account...' : 'Sign Up'}

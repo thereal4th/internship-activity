@@ -75,7 +75,7 @@ export default function LoginPage() {
 
             <Button 
               type="submit" 
-              className="w-full py-6 text-lg" 
+              className="w-full py-3 text-lg bg-black text-white" 
               disabled={isPending}
             >
               {isPending ? (

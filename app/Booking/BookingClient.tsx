@@ -222,7 +222,7 @@ const isSlotBooked = (dateKey: string, time: string) => {
                   <Button variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                  <Button onClick={handleSubmit} className="flex-1 bg-blue-600 text-white hover:bg-blue-700 shadow-md transition-colors" disabled={isSubmitting}>
                     {isSubmitting ? 'Booking...' : 'Confirm Booking'}
                   </Button>
                 </div>
