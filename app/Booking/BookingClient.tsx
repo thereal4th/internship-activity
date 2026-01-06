@@ -92,7 +92,7 @@ const isSlotBooked = (dateKey: string, time: string) => {
 
     if (result.success) {
       setIsModalOpen(false);
-      // This is the magic line. It tells Server Components to re-fetch data.
+    
       router.refresh(); 
       router.push('/MyBookings');
     } else {

@@ -16,6 +16,17 @@ export default function SignupPage() {
     setIsSubmitting(true);
     setError(null);
 
+    // 1. GET VALUES MANUALLY TO CHECK MATCH
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    // 2. CLIENT-SIDE VALIDATION
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setIsSubmitting(false);
+      return; // Stop here, do not send to server
+    }
+
     const result = await registerUserAction(formData);
 
     if (result.success) {
@@ -55,7 +66,6 @@ export default function SignupPage() {
                 type="text"
                 required
                 placeholder="John Doe"
-                // ADDED: text-gray-900 bg-white
                 className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
@@ -67,11 +77,11 @@ export default function SignupPage() {
                 type="email"
                 required
                 placeholder="john@example.com"
-                // ADDED: text-gray-900 bg-white
                 className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
+            {/* PASSWORD FIELD */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
@@ -79,14 +89,25 @@ export default function SignupPage() {
                 type="password"
                 required
                 placeholder="••••••••"
-                // ADDED: text-gray-900 bg-white
+                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              />
+            </div>
+
+            {/* NEW: CONFIRM PASSWORD FIELD */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <input
+                name="confirmPassword" // This name is used in step 1 above
+                type="password"
+                required
+                placeholder="••••••••"
                 className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
               />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full py-3 text-lg bg-black text-white" 
+              className="w-full py-3 text-lg bg-black text-white rounded-xl hover:bg-gray-800 transition-colors shadow-md flex justify-center items-center" 
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating Account...' : 'Sign Up'}
