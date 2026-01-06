@@ -19,22 +19,71 @@ export default function BookingClient({ initialBookings }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Formats date to YYYY-MM-DD
+  // Use LOCAL date components to build YYYY-MM-DD (avoid UTC shift)
   const formatDateKey = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 
   const currentDateKey = formatDateKey(selectedDate);
 
-  /**
-   * FIX: Standardizes the ISO string generation to ensure character-perfect 
-   * comparison with the database records.
-   */
+  // Helper: convert local date+time to canonical UTC ISO string
+  const localDateTimeToUTC = (dateKey: string, time: string) => {
+    // construct local datetime and convert to UTC ISO
+    const local = new Date(`${dateKey}T${time}:00`);
+    return local.toISOString(); // "YYYY-MM-DDTHH:mm:ss.sssZ"
+  };
+
+  // Defensive: normalize initialBookings into canonical UTC ISO strings
+  const normalizedBookings = useMemo(() => {
+    return initialBookings.map(b => {
+      const slotRaw = (b as any).slot;
+      let normalized = '';
+      try {
+        if (!slotRaw && slotRaw !== '') {
+          normalized = '';
+        } else if (typeof slotRaw === 'string') {
+          // "2026-01-05_09:00" => convert to local then toISOString
+          if (/^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}$/.test(slotRaw)) {
+            const parsedLocal = slotRaw.replace('_','T') + ':00';
+            normalized = new Date(parsedLocal).toISOString();
+          } else {
+            const d = new Date(slotRaw);
+            if (!isNaN(d.getTime())) normalized = d.toISOString();
+            else normalized = String(slotRaw);
+          }
+        } else if (typeof slotRaw === 'object' && slotRaw !== null) {
+          if (slotRaw.date && slotRaw.time) {
+            normalized = new Date(`${slotRaw.date}T${slotRaw.time}:00`).toISOString();
+          } else if (slotRaw.id && typeof slotRaw.id === 'string') {
+            const parsed = slotRaw.id.replace('_','T') + ':00';
+            normalized = new Date(parsed).toISOString();
+          } else {
+            normalized = String(slotRaw);
+          }
+        } else {
+          normalized = String(slotRaw);
+        }
+      } catch (e) {
+        normalized = String(slotRaw);
+      }
+      return { ...b, slot: normalized };
+    });
+  }, [initialBookings]);
+
+  // Compare up to seconds (ignore milliseconds)
+  const isoToKey = (iso: string) => (iso ? iso.substring(0,19) : iso);
+
   const isSlotBooked = (dateKey: string, time: string) => {
     try {
-      // Construct a local date string and convert to UTC ISO
-      const checkIso = new Date(`${dateKey}T${time}:00`).toISOString();
-      return initialBookings.some(b => b.slot === checkIso);
+      const target = localDateTimeToUTC(dateKey, time); // canonical UTC ISO
+      const targetKey = isoToKey(target);
+      return normalizedBookings.some(b => {
+        const s = (b.slot as string) || '';
+        return isoToKey(s) === targetKey;
+      });
     } catch (e) {
       return false;
     }
@@ -65,11 +114,9 @@ export default function BookingClient({ initialBookings }: Props) {
   }, []);
 
   const availableSlotsCount = useMemo(() => {
-    // Count how many slots in the timeSlots array are NOT booked for the current date
     const bookedCount = timeSlots.filter(time => isSlotBooked(currentDateKey, time)).length;
     return timeSlots.length - bookedCount;
-  }, [currentDateKey, timeSlots, initialBookings]); 
-  // Adding initialBookings to dependency ensures it updates when data changes
+  }, [currentDateKey, timeSlots, normalizedBookings]);
 
   const handleSlotClick = (time: string) => {
     setSelectedSlot(time);
@@ -80,15 +127,14 @@ export default function BookingClient({ initialBookings }: Props) {
     e.preventDefault();
     if (!selectedSlot) return;
     setIsSubmitting(true);
-    
-    // Ensure the string created here is identical to the one in isSlotBooked
-    const isoSlot = new Date(`${currentDateKey}T${selectedSlot}:00`).toISOString();
-    
+
+    // Convert the user's selected local datetime to canonical UTC ISO
+    const isoSlot = localDateTimeToUTC(currentDateKey, selectedSlot);
+
     const result = await createBookingAction({ slot: isoSlot });
 
     if (result.success) {
       setIsModalOpen(false);
-      // Hard refresh to MyBookings to ensure the server-side revalidation is seen
       window.location.href = '/MyBookings';
     } else {
       alert(result.error || "Failed to save booking");

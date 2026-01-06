@@ -7,6 +7,35 @@ import { Booking, PopulatedRawBooking, User, RawUser } from '@/types'
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/app/auth';
 
+function normalizeSlot(slot: any): string {
+    try {
+        if (!slot && slot !== '') return '';
+        if (typeof slot === 'string') {
+            // "2026-01-05_09:00" => local -> UTC
+            if (/^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}$/.test(slot)) {
+                return new Date(slot.replace('_','T') + ':00').toISOString();
+            }
+            // try parse string (may be ISO with/without Z or other)
+            const d = new Date(slot);
+            if (!isNaN(d.getTime())) return d.toISOString();
+            return String(slot);
+        }
+        if (typeof slot === 'object' && slot !== null) {
+            if (slot.date && slot.time) {
+                return new Date(`${slot.date}T${slot.time}:00`).toISOString();
+            }
+            if (slot.id && typeof slot.id === 'string') {
+                const parsed = slot.id.replace('_','T') + ':00';
+                return new Date(parsed).toISOString();
+            }
+            return String(slot);
+        }
+        return String(slot);
+    } catch (e) {
+        return String(slot);
+    }
+}
+
 export async function createBookingAction(data: { slot: string }) {
     try {
         const session = await auth();
@@ -16,17 +45,23 @@ export async function createBookingAction(data: { slot: string }) {
 
         await connectDB();
         
-        const isBooked = await BookingModel.findOne({ slot: data.slot });
+        // Parse incoming slot (assume it's local if it lacks timezone) and convert to canonical UTC ISO
+        const parsed = new Date(data.slot);
+        if (isNaN(parsed.getTime())) {
+            return { success: false, error: "Invalid slot format" };
+        }
+        const standardizedSlot = parsed.toISOString(); // canonical UTC ISO
+
+        const isBooked = await BookingModel.findOne({ slot: standardizedSlot });
         if (isBooked) {
             return { success: false, error: "Slot is already booked" }
         }
 
         const newBooking = await BookingModel.create({
             user: session.user.id,
-            slot: data.slot
+            slot: standardizedSlot
         });
 
-        //revalidate cache
         revalidatePath('/MyBookings'); 
         revalidatePath('/Booking');
 
@@ -46,7 +81,6 @@ export async function getBookingsAction() {
 
         await connectDB();
 
-        // LOGIC: Filter by user ID so the user only sees their bookings
         const docs = await BookingModel.find({ user: session.user.id })
             .sort({ createdAt: -1 })
             .populate('user') 
@@ -59,7 +93,7 @@ export async function getBookingsAction() {
                 name: doc.user.name,
                 email: doc.user.email
             },
-            slot: doc.slot,
+            slot: normalizeSlot((doc as any).slot),
             createdAt: doc.createdAt.getTime(),
         })) as Booking[];
     }
@@ -74,7 +108,6 @@ export async function getAllBookingsAction() {
     try {
         await connectDB();
 
-        // Notice: No { user: id } filter here. We want everything.
         const docs = await BookingModel.find({})
             .sort({ createdAt: -1 })
             .populate('user') 
@@ -87,7 +120,7 @@ export async function getAllBookingsAction() {
                 name: doc.user.name,
                 email: doc.user.email
             },
-            slot: doc.slot,
+            slot: normalizeSlot((doc as any).slot),
             createdAt: doc.createdAt.getTime(),
         })) as Booking[];
     }
