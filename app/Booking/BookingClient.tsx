@@ -19,15 +19,25 @@ export default function BookingClient({ initialBookings }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Formats date to YYYY-MM-DD
   const formatDateKey = (date: Date) => {
     return date.toISOString().split('T')[0];
   };
 
   const currentDateKey = formatDateKey(selectedDate);
 
+  /**
+   * FIX: Standardizes the ISO string generation to ensure character-perfect 
+   * comparison with the database records.
+   */
   const isSlotBooked = (dateKey: string, time: string) => {
-    const checkIso = new Date(`${dateKey}T${time}`).toISOString();
-    return initialBookings.some(b => b.slot === checkIso);
+    try {
+      // Construct a local date string and convert to UTC ISO
+      const checkIso = new Date(`${dateKey}T${time}:00`).toISOString();
+      return initialBookings.some(b => b.slot === checkIso);
+    } catch (e) {
+      return false;
+    }
   };
 
   const availableDates = useMemo(() => {
@@ -43,8 +53,8 @@ export default function BookingClient({ initialBookings }: Props) {
 
   const timeSlots = useMemo(() => {
     const slots = [];
-    let currentTime = 9 * 60;
-    const endTime = 17 * 60;
+    let currentTime = 9 * 60; // 9:00 AM
+    const endTime = 17 * 60;   // 5:00 PM
     while (currentTime < endTime) {
       const hours = Math.floor(currentTime / 60);
       const minutes = currentTime % 60;
@@ -53,6 +63,13 @@ export default function BookingClient({ initialBookings }: Props) {
     }
     return slots;
   }, []);
+
+  const availableSlotsCount = useMemo(() => {
+    // Count how many slots in the timeSlots array are NOT booked for the current date
+    const bookedCount = timeSlots.filter(time => isSlotBooked(currentDateKey, time)).length;
+    return timeSlots.length - bookedCount;
+  }, [currentDateKey, timeSlots, initialBookings]); 
+  // Adding initialBookings to dependency ensures it updates when data changes
 
   const handleSlotClick = (time: string) => {
     setSelectedSlot(time);
@@ -64,12 +81,15 @@ export default function BookingClient({ initialBookings }: Props) {
     if (!selectedSlot) return;
     setIsSubmitting(true);
     
-    const isoSlot = new Date(`${currentDateKey}T${selectedSlot}`).toISOString();
+    // Ensure the string created here is identical to the one in isSlotBooked
+    const isoSlot = new Date(`${currentDateKey}T${selectedSlot}:00`).toISOString();
+    
     const result = await createBookingAction({ slot: isoSlot });
 
     if (result.success) {
       setIsModalOpen(false);
-      router.push('/MyBookings');
+      // Hard refresh to MyBookings to ensure the server-side revalidation is seen
+      window.location.href = '/MyBookings';
     } else {
       alert(result.error || "Failed to save booking");
       setIsSubmitting(false);
@@ -77,126 +97,128 @@ export default function BookingClient({ initialBookings }: Props) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* HEADER SECTION */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Select a Date & Time</h2>
-        <p className="text-gray-500 mt-1">Times are shown in your local timezone.</p>
-      </div>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* HEADER SECTION */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Select a Date & Time</h2>
+          <p className="text-gray-500 mt-1">Times are shown in your local timezone.</p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* LEFT COLUMN: DATE SELECTOR */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Available Dates</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT COLUMN: DATE SELECTOR */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <h3 className="font-semibold text-gray-900">Available Dates</h3>
+              </div>
+              <div className="max-h-[500px] overflow-y-auto">
+                {availableDates.map((date) => {
+                  const isSelected = formatDateKey(date) === currentDateKey;
+                  return (
+                    <button
+                      key={date.toISOString()}
+                      onClick={() => setSelectedDate(date)}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors ${
+                        isSelected
+                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                          : 'hover:bg-gray-50 text-gray-700 border-l-4 border-transparent'
+                      }`}
+                    >
+                      <div>
+                        <span className="block text-sm font-medium">
+                          {date.toLocaleDateString('en-US', { weekday: 'long' })}
+                        </span>
+                        <span className="block text-xs opacity-75">
+                          {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                        </span>
+                      </div>
+                      {isSelected && <ChevronRight className="h-4 w-4" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="max-h-[500px] overflow-y-auto">
-              {availableDates.map((date) => {
-                const isSelected = formatDateKey(date) === currentDateKey;
-                return (
-                  <button
-                    key={date.toISOString()}
-                    onClick={() => setSelectedDate(date)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-                        : 'hover:bg-gray-50 text-gray-700 border-l-4 border-transparent'
-                    }`}
-                  >
-                    <div>
-                      <span className="block text-sm font-medium">
-                        {date.toLocaleDateString('en-US', { weekday: 'long' })}
-                      </span>
-                      <span className="block text-xs opacity-75">
-                        {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                      </span>
-                    </div>
-                    {isSelected && <ChevronRight className="h-4 w-4" />}
-                  </button>
-                );
-              })}
+          </div>
+
+          {/* RIGHT COLUMN: TIME SLOTS */}
+          <div className="lg:col-span-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </h3>
+                <span className="text-sm text-gray-500">{availableSlotsCount} slots available</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {timeSlots.map((time) => {
+                  const booked = isSlotBooked(currentDateKey, time);
+                  return (
+                    <button
+                      key={time}
+                      disabled={booked}
+                      onClick={() => handleSlotClick(time)}
+                      className={`
+                        py-2 px-3 rounded-lg text-sm font-medium border transition-all
+                        ${booked
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'bg-white text-blue-700 border-blue-200 hover:border-blue-500 hover:shadow-md active:scale-95'
+                        }
+                      `}
+                    >
+                      {booked ? (
+                        <span className="line-through decoration-gray-400">{time}</span>
+                      ) : (
+                        time
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: TIME SLOTS */}
-        <div className="lg:col-span-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-gray-900">
-                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </h3>
-              <span className="text-sm text-gray-500">{timeSlots.length} slots available</span>
-            </div>
+        {/* MODAL SECTION */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900">Confirm Booking</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div className="bg-blue-50 rounded-lg p-4 flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                    </p>
+                    <p className="text-lg font-bold text-blue-700">{selectedSlot}</p>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {timeSlots.map((time) => {
-                const booked = isSlotBooked(currentDateKey, time);
-                return (
-                  <button
-                    key={time}
-                    disabled={booked}
-                    onClick={() => handleSlotClick(time)}
-                    className={`
-                      py-2 px-3 rounded-lg text-sm font-medium border transition-all
-                      ${booked
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : 'bg-white text-blue-700 border-blue-200 hover:border-blue-500 hover:shadow-md active:scale-95'
-                      }
-                    `}
-                  >
-                    {booked ? (
-                      <span className="line-through decoration-gray-400">{time}</span>
-                    ) : (
-                      time
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
+                <p className="text-sm text-gray-600">
+                  This booking will be associated with your account name and email address.
+                </p>
 
-      {/* MODAL SECTION */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Booking</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-500">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-blue-50 rounded-lg p-4 flex items-start gap-3">
-                <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900">
-                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                  </p>
-                  <p className="text-lg font-bold text-blue-700">{selectedSlot}</p>
+                <div className="pt-2 flex gap-3">
+                  <Button variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                    {isSubmitting ? 'Booking...' : 'Confirm Booking'}
+                  </Button>
                 </div>
               </div>
-
-              <p className="text-sm text-gray-600">
-                This booking will be associated with your account name and email address.
-              </p>
-
-              <div className="pt-2 flex gap-3">
-                <Button variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
-                  {isSubmitting ? 'Booking...' : 'Confirm Booking'}
-                </Button>
-              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

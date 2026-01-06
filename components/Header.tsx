@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { CalendarCheck, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react'; // Import this
 import { User } from 'next-auth'; // Use the NextAuth User type
+import { signUserOut } from "@/app/actions/authactions";
 
 interface HeaderProps {
   // session.user from NextAuth is slightly different from your custom User type
@@ -35,7 +36,7 @@ export const Header = ({ currentUser }: HeaderProps) => {
                   onClick={() => signOut({ callbackUrl: '/' })} // Call NextAuth signOut
                   className="flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4" onClick={() => signUserOut()}/>
                   Sign Out
                 </button>
               </div>

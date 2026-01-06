@@ -1,6 +1,6 @@
 'use server';
 
-import {signIn} from '@/app/auth'
+import {signIn, signOut } from '@/app/auth'
 import {AuthError} from 'next-auth';
 import {connectDB} from '@/lib/db';
 import {UserModel} from '@/Models/User';
@@ -48,7 +48,8 @@ export async function registerUserAction(formData: FormData){
 //ACTION: LOGIN USER WRAPPER
 
 //wrap the nextauth signin function to handle errors
-export async function authenticate(prevState: string | undefined, formData: FormData) {
+//removed prevstate
+export async function authenticate(prevState:string|undefined ,formData: FormData) {
   try {
     await signIn('credentials', {
       email: formData.get('email'),
@@ -66,4 +67,8 @@ export async function authenticate(prevState: string | undefined, formData: Form
     }
     throw error; // Next.js redirects are thrown as errors, so we must re-throw them
   }
+}
+
+export async function signUserOut() {
+  await signOut({ redirectTo: "/" });
 }

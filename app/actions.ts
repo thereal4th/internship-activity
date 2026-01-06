@@ -1,69 +1,58 @@
 'use server'
 
-//handles all server interactions
+import { connectDB } from '@/lib/db';
+import { BookingModel } from '@/Models/Booking'
+import { UserModel } from '@/Models/User'
+import { Booking, PopulatedRawBooking, User, RawUser } from '@/types'
+import { revalidatePath } from 'next/cache';
+import { auth } from '@/app/auth';
 
-import {connectDB} from '@/lib/db';
-import {BookingModel} from '@/Models/Booking'
-import {UserModel} from '@/Models/User'
-import {Booking, PopulatedRawBooking, User, RawUser} from '@/types'
-import {revalidatePath} from 'next/cache';
-import {auth} from '@/app/auth';
-
-//ACTION: create a booking
-//TODO: Remove "data.user" from input. We get it from the session. (DONE)
-export async function createBookingAction(data: {slot: string}){
-
-    try{
-        //check session
+export async function createBookingAction(data: { slot: string }) {
+    try {
         const session = await auth();
-        if (!session || !session.user){
-            return{success: false, error: "Please log in first."}
+        if (!session || !session.user) {
+            return { success: false, error: "Please log in first." }
         }
 
         await connectDB();
         
-        //catch duplicate bookings
-        const isBooked = await BookingModel.findOne({slot: data.slot});
-        if(isBooked){
-            return{success: false, error: "Slot is already booked"}
+        const isBooked = await BookingModel.findOne({ slot: data.slot });
+        if (isBooked) {
+            return { success: false, error: "Slot is already booked" }
         }
 
-        //create the document
         const newBooking = await BookingModel.create({
             user: session.user.id,
             slot: data.slot
-            //createdAt has a default value in Models/Booking.ts so we don't need to give it anything
         });
 
-        //clear cache so frontend can update with new data
-        revalidatePath('/MyBookings'); //url path not file path
-        revalidatePath('/Bookings');
+        // FIXED PATHS: Ensure these match your actual folder names exactly
+        revalidatePath('/MyBookings'); 
+        revalidatePath('/Booking');    // Removed the 's' to match your folder
 
-        return {success: true, id: newBooking._id.toString()};
+        return { success: true, id: newBooking._id.toString() };
     }
-    catch(error){
+    catch (error) {
         console.log("Booking could not be created: ", error);
-        return {success: false, error: "Database save failed"};
+        return { success: false, error: "Database save failed" };
     }
 }
 
-//ACTION: get all bookings
+export async function getBookingsAction() {
+    try {
+        const session = await auth();
+        if (!session || !session.user) return [];
 
-export async function getBookingsAction(){
-    try{
         await connectDB();
 
-        //fetch all data and convert to plain js objects using .lean() for optimization
-        //sort data by date of creation
-        const docs = await BookingModel.find({})
-        .sort({ createdAt: -1 })
-        .populate('user') 
-        .lean<PopulatedRawBooking[]>();
+        // LOGIC: Filter by user ID so you only see YOUR bookings
+        const docs = await BookingModel.find({ user: session.user.id })
+            .sort({ createdAt: -1 })
+            .populate('user') 
+            .lean<PopulatedRawBooking[]>();
 
-        //map to frontend Booking interface (for safety and frontend access)
         return docs.map((doc: PopulatedRawBooking) => ({
             id: doc._id.toString(),
-            //safety: since BookingModel says doc.user is an ObjectID, convert to string before sending to frontend.
             user: {
                 id: doc.user._id.toString(),
                 name: doc.user.name,
@@ -71,31 +60,28 @@ export async function getBookingsAction(){
             },
             slot: doc.slot,
             createdAt: doc.createdAt.getTime(),
-        })) as Booking[]; //return array of Booking objects
+        })) as Booking[];
     }
-    catch(error){
+    catch (error) {
         console.log("Fetch failed:", error);
-        return [] //return empty array to avoid client crashes
+        return []
     }
 }
 
-
-//ACTION: cancel bookings
-export async function cancelBookingAction(bookingId: string){
-    try{
+export async function cancelBookingAction(bookingId: string) {
+    try {
         await connectDB();
-
         await BookingModel.findByIdAndDelete(bookingId);
 
-        //revalidate
+        // FIXED PATHS
         revalidatePath('/MyBookings'); 
-        revalidatePath('/Bookings');
+        revalidatePath('/Booking');
 
-        return{success: true}
+        return { success: true }
     }
-    catch(error){
+    catch (error) {
         console.log("Failed to delete booking: ", error);
-        return {success: false, error: "Cancellation failed."}
+        return { success: false, error: "Cancellation failed." }
     }
 }
 
