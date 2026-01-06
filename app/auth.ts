@@ -1,11 +1,12 @@
-// auth.ts
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { authConfig } from "./auth.config";
 import { UserModel } from "@/Models/User";
 import bcrypt from "bcryptjs";
-import { connectDB } from "@/lib/db"; // <--- Import it here (adjust path if needed)
+import { connectDB } from "@/lib/db";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    ...authConfig,
     providers: [
         Credentials({
             name: "Credentials",
@@ -14,11 +15,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                // 1. REUSE CONNECTION LOGIC
+                // 1. Validate that credentials exist and are strings
+                if (!credentials?.email || !credentials?.password) {
+                    return null;
+                }
+
                 await connectDB(); 
 
-                // 2. NOW IT IS SAFE TO USE MODELS
-                const user = await UserModel.findOne({ email: credentials.email });
+                // 2. Cast to string to fix the "Type unknown is not assignable" error
+                const user = await UserModel.findOne({ email: credentials.email as string });
                 
                 if (!user) return null;
                 
@@ -28,6 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 );
 
                 if (passwordMatch) {
+                    // Return an object that matches the NextAuth User type
                     return { 
                         id: user._id.toString(), 
                         name: user.name, 
@@ -38,21 +44,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
         })
     ],
+    // We merge our callbacks with the base ones from authConfig
     callbacks: {
-        //ensure user ID is available in the session
-
-        async session({session, token}){
-            if (token.sub && session.user){
+        ...authConfig.callbacks,
+        async session({ session, token }) {
+            if (token.sub && session.user) {
                 session.user.id = token.sub;
             }
             return session;
         },
-        async jwt({token, user}){
-            if(user){
+        async jwt({ token, user }) {
+            if (user) {
                 token.sub = user.id;
             }
             return token;
         },
     },
-    session: {strategy: "jwt"},
+    session: { strategy: "jwt" },
 });

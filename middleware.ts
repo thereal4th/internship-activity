@@ -1,18 +1,9 @@
-import { auth } from "@/app/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./app/auth.config";
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
-  const { nextUrl } = req;
-
-  const isProtectedRoute = 
-    nextUrl.pathname.startsWith("/Booking") || 
-    nextUrl.pathname.startsWith("/MyBookings");
-
-  if (isProtectedRoute && !isLoggedIn) {
-    return Response.redirect(new URL("/login", nextUrl));
-  }
-});
+export default NextAuth(authConfig).auth;
 
 export const config = {
+  // Matcher ignores static files and api routes
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

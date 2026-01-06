@@ -7,13 +7,13 @@ import { cancelBookingAction } from '@/app/actions';
 import { Booking } from '@/types';
 
 interface Props {
-  initialBookings: any[]; // Changed to any[] because user is now an object again
+  initialBookings: Booking[];
 }
 
 export default function MyBookingsClient({ initialBookings }: Props) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // LOGIC: Sort bookings by the ISO string slot
+  // LOGIC: Sort bookings by parsing the ISO string slot
   const sortedBookings = useMemo(() => {
     return [...initialBookings].sort((a, b) => {
       return new Date(a.slot).getTime() - new Date(b.slot).getTime();
@@ -23,7 +23,9 @@ export default function MyBookingsClient({ initialBookings }: Props) {
   const handleCancel = async (id: string) => {
     if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
       setIsDeleting(id);
+      
       const result = await cancelBookingAction(id);
+      
       if (!result.success) {
         alert(result.error);
         setIsDeleting(null);
@@ -56,17 +58,17 @@ export default function MyBookingsClient({ initialBookings }: Props) {
       ) : (
         <div className="space-y-4">
           {sortedBookings.map((booking) => {
-             // FIX: We create a Date object once from the string
+             // DATA ACCESS FIX: Create date object from the ISO string
              const bookingDate = new Date(booking.slot);
              const isPast = bookingDate < new Date();
              const isThisDeleting = isDeleting === booking.id;
              
              return (
-              <div 
-                key={booking.id} 
+              <div
+                key={booking.id}
                 className={`
-                  bg-white rounded-xl p-6 shadow-sm border border-gray-200 
-                  transition-all hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6 
+                  bg-white rounded-xl p-6 shadow-sm border border-gray-200
+                  transition-all hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6
                   ${isPast ? 'opacity-75' : ''}
                 `}
               >
@@ -82,7 +84,7 @@ export default function MyBookingsClient({ initialBookings }: Props) {
                     <div className="flex items-center text-gray-500 mt-1 gap-4 text-sm">
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {/* Format the time from the ISO string */}
+                        {/* DATA ACCESS FIX: Extract time from the Date object */}
                         {bookingDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
