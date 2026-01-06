@@ -2,7 +2,7 @@
 
 import {signIn} from '@/app/auth'
 import {AuthError} from 'next-auth';
-import {connectDB} from '@/app/actions';
+import {connectDB} from '@/lib/db';
 import {UserModel} from '@/Models/User';
 import bcrypt from 'bcryptjs';
 

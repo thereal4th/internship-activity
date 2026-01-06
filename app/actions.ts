@@ -2,35 +2,35 @@
 
 //handles all server interactions
 
-import clientPromise from '@/lib/db';
+import {connectDB} from '@/lib/db';
 import {BookingModel} from '@/Models/Booking'
 import {UserModel} from '@/Models/User'
-import {Booking, RawBooking, User, RawUser} from '@/types'
+import {Booking, PopulatedRawBooking, User, RawUser} from '@/types'
 import {revalidatePath} from 'next/cache';
-import mongoose from 'mongoose';
-
-//HELPER: ensure mongoose is connected to singleton
-
-export async function connectDB(){
-    //if there is a conneciton, do nothing
-    if (mongoose.connection.readyState >= 1) return;
-    else{
-        await clientPromise;
-        await mongoose.connect(process.env.MONGODB_CONNECTION_STRING!); //! - non-null assertion
-    }
-}
+import {auth} from '@/app/auth';
 
 //ACTION: create a booking
-//TODO: modify to ignore user input and grab ID from session instead for security
-export async function createBookingAction(data: Omit<Booking, 'id'|'createdAt'>){
+//TODO: Remove "data.user" from input. We get it from the session. (DONE)
+export async function createBookingAction(data: {slot: string}){
 
     try{
+        //check session
+        const session = await auth();
+        if (!session || !session.user){
+            return{success: false, error: "Please log in first."}
+        }
+
         await connectDB();
         
+        //catch duplicate bookings
+        const isBooked = await BookingModel.findOne({slot: data.slot});
+        if(isBooked){
+            return{success: false, error: "Slot is already booked"}
+        }
+
         //create the document
         const newBooking = await BookingModel.create({
-            //no need to create IDs, mongodb has built-in IDs
-            user: data.user,
+            user: session.user.id,
             slot: data.slot
             //createdAt has a default value in Models/Booking.ts so we don't need to give it anything
         });
@@ -55,12 +55,20 @@ export async function getBookingsAction(){
 
         //fetch all data and convert to plain js objects using .lean() for optimization
         //sort data by date of creation
-        const docs = await BookingModel.find({}).sort({createdAt:-1}).lean<RawBooking[]>(); //lean should know the resulting interface
-        
+        const docs = await BookingModel.find({})
+        .sort({ createdAt: -1 })
+        .populate('user') 
+        .lean<PopulatedRawBooking[]>();
+
         //map to frontend Booking interface (for safety and frontend access)
-        return docs.map((doc: RawBooking) => ({
+        return docs.map((doc: PopulatedRawBooking) => ({
             id: doc._id.toString(),
-            user: doc.user,
+            //safety: since BookingModel says doc.user is an ObjectID, convert to string before sending to frontend.
+            user: {
+                id: doc.user._id.toString(),
+                name: doc.user.name,
+                email: doc.user.email
+            },
             slot: doc.slot,
             createdAt: doc.createdAt.getTime(),
         })) as Booking[]; //return array of Booking objects

@@ -1,42 +1,33 @@
 'use client';
 
-import { useState, useMemo } from 'react'; // No useEffect needed!
+import { useState, useMemo } from 'react';
 import { Calendar, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { cancelBookingAction } from '@/app/actions';
 import { Booking } from '@/types';
 
 interface Props {
-  initialBookings: Booking[];
+  initialBookings: any[]; // Changed to any[] because user is now an object again
 }
 
 export default function MyBookingsClient({ initialBookings }: Props) {
-  // We initialize state with the server data
-  // We keep it in state so we can optimisticly remove items if we wanted to, 
-  // though revalidation usually handles this.
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // LOGIC: Sort bookings by Date + Time (Exactly as you had it)
+  // LOGIC: Sort bookings by the ISO string slot
   const sortedBookings = useMemo(() => {
     return [...initialBookings].sort((a, b) => {
-      const dateA = new Date(`${a.slot.date}T${a.slot.time}`);
-      const dateB = new Date(`${b.slot.date}T${b.slot.time}`);
-      return dateA.getTime() - dateB.getTime();
+      return new Date(a.slot).getTime() - new Date(b.slot).getTime();
     });
   }, [initialBookings]);
 
   const handleCancel = async (id: string) => {
     if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
-      setIsDeleting(id); // Show loading state for specific button
-      
+      setIsDeleting(id);
       const result = await cancelBookingAction(id);
-      
       if (!result.success) {
         alert(result.error);
-        setIsDeleting(null); // Reset if failed
+        setIsDeleting(null);
       }
-      // If success, Next.js auto-refreshes the prop via revalidatePath
-      // so we don't strictly need to update state manually!
     }
   };
 
@@ -65,8 +56,8 @@ export default function MyBookingsClient({ initialBookings }: Props) {
       ) : (
         <div className="space-y-4">
           {sortedBookings.map((booking) => {
-             // Create date object for display logic
-             const bookingDate = new Date(`${booking.slot.date}T${booking.slot.time}`);
+             // FIX: We create a Date object once from the string
+             const bookingDate = new Date(booking.slot);
              const isPast = bookingDate < new Date();
              const isThisDeleting = isDeleting === booking.id;
              
@@ -91,7 +82,8 @@ export default function MyBookingsClient({ initialBookings }: Props) {
                     <div className="flex items-center text-gray-500 mt-1 gap-4 text-sm">
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {booking.slot.time}
+                        {/* Format the time from the ISO string */}
+                        {bookingDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                       <span>{booking.user.name}</span>

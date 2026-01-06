@@ -1,11 +1,12 @@
 import mongoose, {Schema, Model} from 'mongoose';
 import {User} from '@/types'
 
-//create new interface for DB that extends parent User interface in @/types
-export interface UserDocument extends Omit<User, 'id'> { //omit id, mongodb has own id field
-    createdAt: Date;
+//create new interface for DB 
+export interface UserDocument extends Document{
+    name: string;
+    email: string;
     password: string;
-    //extends the safe user type
+    createdAt?: Date; // optional for "No overload matches" protection
 }
 
 const userSchema = new Schema<UserDocument>({

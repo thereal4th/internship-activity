@@ -1,5 +1,16 @@
-// lib/db.ts
 import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
+
+//HELPER: ensure mongoose is connected to singleton
+
+export async function connectDB(){
+    //if there is a conneciton, do nothing
+    if (mongoose.connection.readyState >= 1) return;
+    else{
+        await clientPromise;
+        await mongoose.connect(process.env.MONGODB_CONNECTION_STRING!); //! - non-null assertion
+    }
+}
 
 if (!process.env.MONGODB_CONNECTION_STRING) {
   throw new Error('Please add your Mongo URI to .env.local');
