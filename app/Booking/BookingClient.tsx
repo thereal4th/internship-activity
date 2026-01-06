@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, X, Clock } from 'lucide-react';
 import { Button } from '@/components/Button'; 
@@ -13,9 +13,6 @@ interface Props {
 
 export default function BookingClient({ initialBookings }: Props) {
   const router = useRouter();
-
-  // CHANGE 1: Create local state initialized with props, but capable of updating
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -29,46 +26,19 @@ export default function BookingClient({ initialBookings }: Props) {
 
   const currentDateKey = formatDateKey(selectedDate);
 
-  // CHANGE 2: Fetch bookings whenever the date changes
-  useEffect(() => {
-    async function fetchBookings() {
-      try {
-        // This assumes you have an API route at /api/bookings
-        const res = await fetch(`/api/bookings?date=${currentDateKey}`);
-        
-        if (res.ok) {
-          const data = await res.json();
-          setBookings(data);
-          // console.log("Updated bookings for", currentDateKey, data);
-        } else {
-          console.error("Failed to fetch slots");
-        }
-      } catch (err) {
-        console.error("Error fetching bookings:", err);
-      }
-    }
-
-    if (currentDateKey) {
-      fetchBookings();
-    }
-  }, [currentDateKey]);
-
   /**
    * CORE FIX: Matches exactly the string format saved in the DB.
    * Format: "YYYY-MM-DD_HH:mm" (e.g., "2026-01-05_09:30")
    */
-  const isSlotBooked = (dateKey: string, time: string) => {
+const isSlotBooked = (dateKey: string, time: string) => {
     const targetId = `${dateKey}_${time}`;
     
-    // CHANGE 3: Use 'bookings' state instead of 'initialBookings' prop
-    return bookings.some(b => {
-        // 1. Check if slot is a simple string (Expected new format)
-        if (typeof b.slot === 'string') {
-            return b.slot === targetId;
-        }
-        // 2. Fallback: Check if slot is an object (Old data format)
+    // Read directly from 'initialBookings'
+    return initialBookings.some(b => {
+        if (typeof b.slot === 'string') return b.slot === targetId;
+        // Legacy check
         if (typeof b.slot === 'object' && b.slot !== null) {
-            // @ts-expect-error-because-yes
+            // @ts-expect-error handling legacy data
             return b.slot.id === targetId || b.slot === targetId;
         }
         return false;
@@ -99,14 +69,13 @@ export default function BookingClient({ initialBookings }: Props) {
     return slots;
   }, []);
 
-  //get the number of bookings
+  // Calculate available slots
+  // This re-calculates automatically whenever 'initialBookings' or 'currentDateKey' changes
   const bookedCount = timeSlots.filter(
     time => isSlotBooked(currentDateKey, time)
   ).length;
 
-  const availableSlotsCount = 16-bookedCount //get the number of available slots
-
-// You also don't need the dependency array anymore!
+  const availableSlotsCount = timeSlots.length - bookedCount;
 
   const handleSlotClick = (time: string) => {
     setSelectedSlot(time);
@@ -118,17 +87,13 @@ export default function BookingClient({ initialBookings }: Props) {
     if (!selectedSlot) return;
     setIsSubmitting(true);
     
-    // CORE FIX: Send the exact "Wall Clock" string. 
     const slotId = `${currentDateKey}_${selectedSlot}`;
-    
     const result = await createBookingAction({ slot: slotId });
 
     if (result.success) {
       setIsModalOpen(false);
-      // Refresh the page data immediately so the slot turns gray
+      // This is the magic line. It tells Server Components to re-fetch data.
       router.refresh(); 
-      // Manually update local state to reflect change instantly without waiting for refresh
-      // (Optional UX improvement)
       router.push('/MyBookings');
     } else {
       alert(result.error || "Failed to save booking");
@@ -136,7 +101,6 @@ export default function BookingClient({ initialBookings }: Props) {
     }
   };
 
-  // Helper for nice time display (e.g. "13:00" -> "1:00 PM")
   const formatTimeDisplay = (time: string) => {
       if (!time) return "";
       const [h, m] = time.split(':');
