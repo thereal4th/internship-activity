@@ -2,7 +2,7 @@ import mongoose, { Schema, Model} from 'mongoose';
 
 //create booking document interface for the DB
 export interface BookingDocument extends Document{
-    user: mongoose.Types.ObjectId;
+    user: string;
     slot:string;
     createdAt?: Date; //optional during creation
 }
@@ -11,7 +11,7 @@ export interface BookingDocument extends Document{
 //we can create sub-schemas for user and slot to assign interfaces for further type safety
 const bookingSchema = new Schema<BookingDocument>({
     user: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: 'User', //links to user collection instead of making user copies
         required: true
     },
