@@ -68,7 +68,7 @@ export default function BookingClient({ initialBookings }: Props) {
         }
         // 2. Fallback: Check if slot is an object (Old data format)
         if (typeof b.slot === 'object' && b.slot !== null) {
-            // @ts-ignore
+            // @ts-expect-error-because-yes
             return b.slot.id === targetId || b.slot === targetId;
         }
         return false;
@@ -99,10 +99,14 @@ export default function BookingClient({ initialBookings }: Props) {
     return slots;
   }, []);
 
-  const availableSlotsCount = useMemo(() => {
-    const bookedCount = timeSlots.filter(time => isSlotBooked(currentDateKey, time)).length;
-    return timeSlots.length - bookedCount;
-  }, [currentDateKey, bookings, timeSlots]); // Updated dependency to 'bookings'
+  //get the number of bookings
+  const bookedCount = timeSlots.filter(
+    time => isSlotBooked(currentDateKey, time)
+  ).length;
+
+  const availableSlotsCount = 16-bookedCount //get the number of available slots
+
+// You also don't need the dependency array anymore!
 
   const handleSlotClick = (time: string) => {
     setSelectedSlot(time);
