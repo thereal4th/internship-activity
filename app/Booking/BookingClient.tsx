@@ -29,16 +29,10 @@ export default function BookingClient({ initialBookings }: Props) {
 const isSlotBooked = (dateKey: string, time: string) => {
     const targetId = `${dateKey}_${time}`; //Matches exactly the string format saved in the DB.
     
-    // Read directly from 'initialBookings'
-    return initialBookings.some(b => {
-        if (typeof b.slot === 'string') return b.slot === targetId;
-        // Legacy check
-        if (typeof b.slot === 'object' && b.slot !== null) {
-            // @ts-expect-error handling legacy data
-            return b.slot.id === targetId || b.slot === targetId;
-        }
-        return false;
-    });
+    // some returns a boolean value - depending on the result of the callback
+    // some iterates over elements in an array and the callback handles the checking of conditions
+    // if the callback returns true, some returns true, vice versa
+    return initialBookings.some(b => (b.slot === targetId))
   };
 
   const availableDates = useMemo(() => {
