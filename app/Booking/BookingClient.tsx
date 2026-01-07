@@ -32,6 +32,7 @@ const isSlotBooked = (dateKey: string, time: string) => {
     // some returns a boolean value - depending on the result of the callback
     // some iterates over elements in an array and the callback handles the checking of conditions
     // if the callback returns true, some returns true, vice versa
+    // the callback MUST return a truthy value, booleans for best practice
     return initialBookings.some(b => (b.slot === targetId))
   };
 
