@@ -26,12 +26,8 @@ export default function BookingClient({ initialBookings }: Props) {
 
   const currentDateKey = formatDateKey(selectedDate);
 
-  /**
-   * CORE FIX: Matches exactly the string format saved in the DB.
-   * Format: "YYYY-MM-DD_HH:mm" (e.g., "2026-01-05_09:30")
-   */
 const isSlotBooked = (dateKey: string, time: string) => {
-    const targetId = `${dateKey}_${time}`;
+    const targetId = `${dateKey}_${time}`; //Matches exactly the string format saved in the DB.
     
     // Read directly from 'initialBookings'
     return initialBookings.some(b => {
@@ -87,7 +83,7 @@ const isSlotBooked = (dateKey: string, time: string) => {
     if (!selectedSlot) return;
     setIsSubmitting(true);
     
-    const slotId = `${currentDateKey}_${selectedSlot}`;
+    const slotId = `${currentDateKey}_${selectedSlot}`;     
     const result = await createBookingAction({ slot: slotId });
 
     if (result.success) {
