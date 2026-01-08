@@ -1,19 +1,36 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { authConfig } from "./auth.config";
-import { UserModel } from "@/Models/User";
-import bcrypt from "bcryptjs";
+//handles the heavy implementation of authentication
+//imports the authentication rules in authConfig
+
+import NextAuth from "next-auth";//main framework function
+import Credentials from "next-auth/providers/credentials"; //Credentials is the specific login method for email and password
+import { authConfig } from "./auth.config"; //contains the lightweight auth rules
+import { UserModel } from "@/Models/User"; //User DB schema
+import bcrypt from "bcryptjs"; //library to hash passwords and compare hashed passwords
 import { connectDB } from "@/lib/db";
 
+/*
+handler: used by the API route: api/auth/[...nextauth/route.ts]
+signIn: function used in authActions to log users in
+signOut: function to log users out
+auth: function to get the current user session (used in app/page.tsx and bookingActions.ts)
+*/
 export const { handlers, signIn, signOut, auth } = NextAuth({
+    //merge authconfig using spread operator
+    //pulls in 'pages' settings and 'authorized' rule from authConfig
     ...authConfig,
+
+    //serves as the "Menu" of login options, we only have one: Credentials.
     providers: [
         Credentials({
             name: "Credentials",
+
+            //this object defines what inputs the NextAuth form needs
             credentials: {
                 email: { label: "Email", type: "email" },
                 password: { label: "Password", type: "password" },
             },
+
+            //this function runs when `signIn(credentials)` is called in authActions
             async authorize(credentials) {
                 // 1. Validate that credentials exist and are strings
                 if (!credentials?.email || !credentials?.password) {

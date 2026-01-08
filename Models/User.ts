@@ -1,5 +1,4 @@
 import mongoose, {Schema, Model} from 'mongoose';
-import {User} from '@/types'
 
 //create new interface for DB 
 export interface UserDocument extends Document{
