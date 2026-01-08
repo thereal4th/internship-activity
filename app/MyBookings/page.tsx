@@ -1,4 +1,4 @@
-import {getBookingsAction} from '@/app/actions';
+import {getBookingsAction} from '@/app/actions/bookingActions';
 import MyBookingsClient from './MyBookingsClient';
 
 export default async function MyBookingsPage(){

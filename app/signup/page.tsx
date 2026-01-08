@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { registerUserAction } from '@/app/actions/authactions';
+import { registerUserAction } from '@/app/actions/authActions';
 import { Button } from '@/components/Button';
 import { CalendarCheck, ArrowRight, AlertCircle } from 'lucide-react';
 

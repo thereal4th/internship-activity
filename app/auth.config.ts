@@ -1,9 +1,13 @@
-//import type definition from nextauth to ensure config object matches it
+/*
+Exports a config object that defines the authentication rules and logic,-
+imported by the middleware and auth.ts
+*/
 
+//import type definition from nextauth to ensure config object matches it
 import type { NextAuthConfig } from "next-auth";
 
 //intialize and export authConfig object
-//contains authentication rules that will be imported into middleware.ts and auth.ts
+//contains authentication rules and logic that will be imported into middleware.ts and auth.ts
 export const authConfig = {
   pages: {
     signIn: "/login", //if something goes wrong or user needs to sign in, they are sent to /app/login/page.tsx

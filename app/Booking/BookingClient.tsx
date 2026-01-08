@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, X, Clock } from 'lucide-react';
 import { Button } from '@/components/Button'; 
-import { createBookingAction } from '@/app/actions';
+import { createBookingAction } from '@/app/actions/bookingActions';
 import { Booking } from '@/types';
 
 interface Props {

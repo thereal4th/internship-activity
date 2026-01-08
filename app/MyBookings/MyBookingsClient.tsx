@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Calendar, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/Button';
-import { cancelBookingAction } from '@/app/actions';
+import { cancelBookingAction } from '@/app/actions/bookingActions';
 import { Booking } from '@/types';
 
 interface Props {

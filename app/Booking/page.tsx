@@ -1,4 +1,4 @@
-import {getAllBookingsAction} from '@/app/actions'
+import {getAllBookingsAction} from '@/app/actions/bookingActions'
 import BookingClient from './BookingClient';
 
 export default async function BookingPage(){

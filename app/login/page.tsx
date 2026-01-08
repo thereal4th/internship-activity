@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { authenticate } from '@/app/actions/authactions';
+import { authenticate } from '@/app/actions/authActions';
 import { Button } from '@/components/Button';
 import { CalendarCheck, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 

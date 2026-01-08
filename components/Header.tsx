@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { CalendarCheck, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react'; // Import this
 import { User } from 'next-auth'; // Use the NextAuth User type
-import { signUserOut } from "@/app/actions/authactions";
+import { signUserOut } from "@/app/actions/authActions";
 
 interface HeaderProps {
   // session.user from NextAuth is slightly different from your custom User type
