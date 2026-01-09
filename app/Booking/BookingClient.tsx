@@ -117,7 +117,7 @@ const isSlotBooked = (dateKey: string, time: string) => {
               <div className="p-4 bg-gray-50 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Available Dates</h3>
               </div>
-              <div className="max-h-[500px] overflow-y-auto">
+              <div className="max-h-125 overflow-y-auto">
                 {availableDates.map((date) => {
                   const isSelected = formatDateKey(date) === currentDateKey;
                   return (
