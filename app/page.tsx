@@ -16,7 +16,7 @@ export default async function LandingPage() {
 
       <section className="flex-1 flex items-center justify-center bg-white px-4 py-12 sm:px-6 lg:px-8">
         <div className="max-w-4xl w-full space-y-8 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-normal bg-gradient-to-r from-blue-600 to-green-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-normal bg-linear-to-r from-blue-600 to-green-400 bg-clip-text text-transparent">
             Booking made effortless.
           </h1>
           <p className="max-w-2xl mx-auto text-xl text-gray-500">

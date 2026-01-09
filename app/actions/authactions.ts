@@ -1,19 +1,23 @@
-
+//contains the server actions related to the user such as signing in, making an account, etc
 
 'use server';
 
-import {signIn, signOut } from '@/app/auth'
+import {signIn, signOut } from '@/app/auth' //import functions from our auth engine
 import {AuthError} from 'next-auth';
 import {connectDB} from '@/lib/db';
 import {UserModel} from '@/Models/User';
 import bcrypt from 'bcryptjs';
 
-//ACTION: REGISTER USER
+//ACTION: CREATE USER ACCOUNT
 export async function registerUserAction(formData: FormData){
+
+  //extract form data
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+
+    //check if any of the data is empty
     if(!name || !email || !password){
         return {success: false, error: "All fields required"};
     }
@@ -21,11 +25,10 @@ export async function registerUserAction(formData: FormData){
     try{
         await connectDB();
 
-        //check if user exists to avoid duplication
+        //check if user exists based on email to avoid duplication 
         const existingUser = await UserModel.findOne({email});
-
         if (existingUser){
-            return{success: false, error: "Email already exists"};
+            return{success: false, error: "Email already exists"}; //throw server error
         }
 
         //hash password
@@ -47,7 +50,7 @@ export async function registerUserAction(formData: FormData){
     }
 }
 
-//ACTION: LOGIN USER WRAPPER
+//ACTION: HANDLES USER LOG IN BY WRAPPING signIn function from app/auth
 
 //wrap the nextauth signin function to handle errors
 //removed prevstate
