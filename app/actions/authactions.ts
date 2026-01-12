@@ -53,7 +53,7 @@ export async function registerUserAction(formData: FormData){
 //ACTION: HANDLES USER LOG IN BY WRAPPING signIn function from app/auth
 
 //wrap the nextauth signin function to handle errors
-//removed prevstate
+//prevState is a required parameter for the useActionState hook in app/login
 export async function authenticate(prevState:string|undefined ,formData: FormData) {
   try {
     await signIn('credentials', {
