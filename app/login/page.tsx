@@ -10,8 +10,10 @@ import { CalendarCheck, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 export default function LoginPage() {
   const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
   
+  
   const searchParams = useSearchParams();
-  const showSuccess = searchParams.get('registered') === 'true';
+  //for newly created accounts
+  const showSuccess = searchParams.get('registered') === 'true'; //param defined in app/signup on successful account creation
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
