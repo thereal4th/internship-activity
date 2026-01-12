@@ -11,11 +11,17 @@ import { connectDB } from "@/lib/db";
 /*
 NextAuth() generates functions and objects to be destructured and used in the program
 
+providers[] = handlers
+authorize() = signIn
+session: "jwt" = signOut()
+callbacks = auth()
+
 handler: object used by the API route: api/auth/[...nextauth/route.ts], which tells the route how to handle GET and POST reqs
 signIn: function used in authActions to log users in
 signOut: function to log users out
 auth: function to get the current user session (used in app/page.tsx and bookingActions.ts)
 */
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
     //merge authconfig using spread operator
     //pulls in 'pages' settings and 'authorized' rule from authConfig
